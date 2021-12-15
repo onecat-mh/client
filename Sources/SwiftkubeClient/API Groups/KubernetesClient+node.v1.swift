@@ -17,29 +17,29 @@
 import Foundation
 import SwiftkubeModel
 
-// MARK: - SettingsV1Alpha1API
+// MARK: - NodeV1API
 
-public protocol SettingsV1Alpha1API {
+public protocol NodeV1API {
 
-	var podPresets: NamespacedGenericKubernetesClient<settings.v1alpha1.PodPreset> { get }
+	var runtimeClasses: ClusterScopedGenericKubernetesClient<node.v1.RuntimeClass> { get }
 }
 
-/// DSL for `settings.v1alpha1` API Group
+/// DSL for `nodeV1` API Group
 public extension KubernetesClient {
 
-	class SettingsV1Alpha1: SettingsV1Alpha1API {
+	class NodeV1: NodeV1API {
 		private var client: KubernetesClient
 
 		internal init(_ client: KubernetesClient) {
 			self.client = client
 		}
 
-		public var podPresets: NamespacedGenericKubernetesClient<settings.v1alpha1.PodPreset> {
-			client.namespaceScoped(for: settings.v1alpha1.PodPreset.self)
+		public var runtimeClasses: ClusterScopedGenericKubernetesClient<node.v1.RuntimeClass> {
+			client.clusterScoped(for: node.v1.RuntimeClass.self)
 		}
 	}
 
-	var settingsV1Alpha1: SettingsV1Alpha1API {
-		SettingsV1Alpha1(self)
+	var nodeV1: NodeV1API {
+		NodeV1(self)
 	}
 }

@@ -17,8 +17,8 @@
 import AsyncHTTPClient
 import NIO
 import NIOHTTP1
-import SwiftkubeModel
 @testable import SwiftkubeClient
+import SwiftkubeModel
 import XCTest
 
 final class RequestBuilderTests: XCTestCase {
@@ -39,172 +39,205 @@ final class RequestBuilderTests: XCTestCase {
 	}
 
 	func testGetInNamespace() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		var request = try? builder.to(.GET).in(.default).build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		var request = try? builder.in(.default).toGet().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 
-		request = try? builder.to(.GET).in(.system).build()
+		request = try? builder.in(.system).toGet().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/kube-system/pods")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 	}
 
 	func testGetInAllNamespaces() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.allNamespaces).build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.allNamespaces).toGet().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/pods")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 	}
 
 	func testGetInNamespaceWithName() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		var request = try? builder.to(.GET).in(.default).resource(withName: "test").build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		var request = try? builder.in(.default).toGet().resource(withName: "test").build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 
-		request = try? builder.to(.GET).in(.system).build()
+		request = try? builder.in(.system).toGet().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/kube-system/pods/test")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 	}
 
 	func testFollowInNamespace() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.toFollow(pod: "pod", container: "container").in(.system).build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.system).toFollow(pod: "pod", container: "container").build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/kube-system/pods/pod/log?follow=true&container=container")!)
 		XCTAssertEqual(request?.method, HTTPMethod.GET)
 	}
 
 	func testGetWithListOptions_Eq() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.labelSelector(.eq(["app": "nginx"])),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "labelSelector=app%3Dnginx")
 	}
 
 	func testGetWithListOptions_NotEq() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.labelSelector(.neq(["app": "nginx"])),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "labelSelector=app!%3Dnginx")
 	}
 
 	func testGetWithListOptions_In() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.labelSelector(.in(["env": ["dev", "staging"]])),
 		])
-		.build()
+			.build()
 		XCTAssertEqual(request?.url.query, "labelSelector=env%20in%20(dev,staging)")
 	}
 
 	func testGetWithListOptions_NotIn() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.labelSelector(.notIn(["env": ["dev", "staging"]])),
 		])
-		.build()
+			.build()
 		XCTAssertEqual(request?.url.query, "labelSelector=env%20notin%20(dev,staging)")
 	}
 
-
 	func testGetWithListOptions_Exists() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.labelSelector(.exists(["app", "env"])),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "labelSelector=app,env")
 	}
 
 	func testGetWithListOptions_FieldEq() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.fieldSelector(.eq(["app": "nginx"])),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "fieldSelector=app%3Dnginx")
 	}
 
 	func testGetWithListOptions_FieldNotEq() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
 			.fieldSelector(.neq(["app": "nginx"])),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "fieldSelector=app!%3Dnginx")
 	}
 
 	func testGetWithListOptions_Limit() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
-			.limit(2)
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
+			.limit(2),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "limit=2")
 	}
 
 	func testGetWithListOptions_Version() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.GET).in(.default).with(options: [
-			.resourceVersion("20")
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().with(options: [
+			.resourceVersion("20"),
 		])
-		.build()
+			.build()
 
 		XCTAssertEqual(request?.url.query, "resourceVersion=20")
 	}
 
+	func testGetStatus() {
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().resource(withName: "test").subResource(.status).build()
+
+		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test/status")!)
+		XCTAssertEqual(request?.method, HTTPMethod.GET)
+	}
+
+	func testGetScale() {
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.default).toGet().resource(withName: "test").subResource(.scale).build()
+
+		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test/scale")!)
+		XCTAssertEqual(request?.method, HTTPMethod.GET)
+	}
+
 	func testDeleteInNamespace() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		var request = try? builder.to(.DELETE).resource(withName: "test").in(.default).build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		var request = try? builder.in(.default).toDelete().resource(withName: "test").build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test")!)
 		XCTAssertEqual(request?.method, HTTPMethod.DELETE)
 
-		request = try? builder.to(.DELETE).in(.system).build()
+		request = try? builder.in(.system).toDelete().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/kube-system/pods/test")!)
 		XCTAssertEqual(request?.method, HTTPMethod.DELETE)
 	}
 
 	func testDeleteInAllNamespaces() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
-		let request = try? builder.to(.DELETE).in(.allNamespaces).build()
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let request = try? builder.in(.allNamespaces).toDelete().build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/pods")!)
 		XCTAssertEqual(request?.method, HTTPMethod.DELETE)
 	}
 
 	func testCreateInNamespace() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
+		let builder = RequestBuilder(config: config, gvk: gvk)
 		let pod = sk.pod(name: "test")
-		let request = try? builder.to(.POST).resource(pod).in(.default).build()
+		let request = try? builder.in(.default).toPost().body(pod).build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods")!)
 		XCTAssertEqual(request?.method, HTTPMethod.POST)
 	}
 
 	func testReplaceInNamespace() {
-		let builder = RequestBuilder<core.v1.Pod>(config: config, gvk: gvk)
+		let builder = RequestBuilder(config: config, gvk: gvk)
 		let pod = sk.pod(name: "test")
-		let request = try? builder.to(.PUT).resource(pod).resource(withName: "test").in(.default).build()
+		let request = try? builder.in(.default).toPut().resource(withName: "test").body(.resource(payload: pod)).build()
 
 		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test")!)
+		XCTAssertEqual(request?.method, HTTPMethod.PUT)
+	}
+
+	func testReplaceStatusInNamespace() {
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let pod = sk.pod(name: "test")
+		let request = try? builder.in(.default).toPut().resource(withName: "test").body(.subResource(type: .status, payload: pod)).build()
+
+		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test/status")!)
+		XCTAssertEqual(request?.method, HTTPMethod.PUT)
+	}
+
+	func testReplaceScaleInNamespace() {
+		let builder = RequestBuilder(config: config, gvk: gvk)
+		let pod = sk.pod(name: "test")
+		let request = try? builder.in(.default).toPut().resource(withName: "test").body(.subResource(type: .scale, payload: pod)).build()
+
+		XCTAssertEqual(request?.url, URL(string: "https://kubernetesmaster/api/v1/namespaces/default/pods/test/scale")!)
 		XCTAssertEqual(request?.method, HTTPMethod.PUT)
 	}
 }

@@ -19,13 +19,19 @@ jobs:
         run: swiftformat --lint Sources
 
   macOS:
-    runs-on: macos-latest
+    runs-on: macos-11
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
     - name: Build
-      run: swift build -v
+      run: swift build
     - name: Test
-      run: swift test  --enable-test-discovery
+      run: swift test --skip K3d
 
   iOS:
     name: Test iOS
@@ -35,15 +41,35 @@ jobs:
         destination: ["platform=iOS Simulator,OS=14.4,name=iPhone 12 Pro"]
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
       - name: iOS - ${{ matrix.destination }}
-        run: set -o pipefail && xcodebuild -scheme SwiftkubeClient -destination "${{ matrix.destination }}" clean test | xcpretty
+        run: set -o pipefail && xcodebuild -scheme SwiftkubeClient -destination "${{ matrix.destination }}" clean build | xcpretty
 
   linux:
     runs-on: ubuntu-18.04
-    container: swift:5.2
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+    - name: Create cluster
+      uses: AbsaOSS/k3d-action@v1.5.0
+      with:
+        cluster-name: "swiftkube"
+        args: -c k3d/swiftkube.yaml
+    - name: Setup Swift
+      uses: fwal/setup-swift@v1
+      with:
+        swift-version: "5.4"
     - name: Build
-      run: swift build -v --enable-test-discovery
+      run: swift build
     - name: Test
-      run: swift test  --enable-test-discovery
+      run: swift test

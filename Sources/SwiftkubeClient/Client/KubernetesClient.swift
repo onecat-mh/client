@@ -100,8 +100,30 @@ public class KubernetesClient {
 
 		guard
 			let config =
-			(try? LocalFileConfigLoader().load(logger: logger)) ??
+			(try? LocalKubeConfigLoader().load(logger: logger)) ??
 			(try? ServiceAccountConfigLoader().load(logger: logger))
+		else {
+			return nil
+		}
+
+		self.init(config: config, provider: provider, logger: logger)
+	}
+
+	/// Create a new instance of the Kubernetes client.
+	///
+	/// - Parameters:
+	///    - fromURL: The url to load the configuration from for this client instance. It can be a local file or remote URL.
+	///    - provider: Specify how `EventLoopGroup` will be created.
+	///    - logger: The logger to use for this client.
+	public convenience init?(
+		fromURL url: URL,
+		provider: HTTPClient.EventLoopGroupProvider = .shared(MultiThreadedEventLoopGroup(numberOfThreads: 1)),
+		logger: Logger? = nil
+	) {
+		let logger = logger ?? KubernetesClient.loggingDisabled
+
+		guard
+			let config = try? URLConfigLoader(url: url).load(logger: logger)
 		else {
 			return nil
 		}
@@ -123,14 +145,11 @@ public class KubernetesClient {
 		self.config = config
 		self.logger = logger ?? KubernetesClient.loggingDisabled
 
-		var tlsConfiguration = TLSConfiguration.forClient(
-			minimumTLSVersion: .tlsv12,
-			certificateVerification: .fullVerification
-		)
+		var tlsConfiguration = TLSConfiguration.makeClientConfiguration()
+		tlsConfiguration.minimumTLSVersion = .tlsv12
+		tlsConfiguration.trustRoots = config.trustRoots
 
-		tlsConfiguration.trustRoots = self.config.trustRoots
-
-		if case let KubernetesClientAuthentication.x509(clientCertificate, clientKey) = self.config.authentication {
+		if case let KubernetesClientAuthentication.x509(clientCertificate, clientKey) = config.authentication {
 			tlsConfiguration.certificateChain = [.certificate(clientCertificate)]
 			tlsConfiguration.privateKey = NIOSSLPrivateKeySource.privateKey(clientKey)
 		}
